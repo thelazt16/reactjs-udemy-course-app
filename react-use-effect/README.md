@@ -1,70 +1,55 @@
-# Getting Started with Create React App
+useEffect() is used if you want to do a function as a side-effect for changing the state using useState but doesn't want to re-render the whole page infinitely (using setState gonna make React re-render the whole stage). useEffect only rendered once when the page rendered for the first time
+=> App.js
+the useEffect is used to check whether there's the user logged in or not by checking the Local Storage and set the login state if the user is logged in
+useEffect is run once with empty dependencies
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+=> Login.js
+the useEffect is used to check whether the form is valid by checking if the entered email include "@" and the password is more than 6 character.
+the useEffect is triggered with dependencies enteredEmail and enteredPassword, so whenever those state value changed the useEffect will get triggered.
 
-## Available Scripts
+In the previous lecture, we explored useEffect() dependencies.
 
-In the project directory, you can run:
+You learned, that you should add "everything" you use in the effect function as a dependency - i.e. all state variables and functions you use in there.
 
-### `yarn start`
+That is correct, but there are a few exceptions you should be aware of:
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+    You DON'T need to add state updating functions (as we did in the last lecture with setFormIsValid): React guarantees that those functions never change, hence you don't need to add them as dependencies (you could though)
 
-The page will reload if you make edits.\
-You will also see any lint errors in the console.
+    You also DON'T need to add "built-in" APIs or functions like fetch(), localStorage etc (functions and features built-into the browser and hence available globally): These browser APIs / global functions are not related to the React component render cycle and they also never change
 
-### `yarn test`
+    You also DON'T need to add variables or functions you might've defined OUTSIDE of your components (e.g. if you create a new helper function in a separate file): Such functions or variables also are not created inside of a component function and hence changing them won't affect your components (components won't be re-evaluated if such variables or functions change and vice-versa)
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+    So long story short: You must add all "things" you use in your effect function if those "things" could change because your component (or some parent component) re-rendered. That's why variables or state defined in component functions, props or functions defined in component functions have to be added as dependencies!
 
-### `yarn build`
+Here's a made-up dummy example to further clarify the above-mentioned scenarios:
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+    import { useEffect, useState } from 'react';
+     
+    let myTimer;
+     
+    const MyComponent = (props) => {
+      const [timerIsActive, setTimerIsActive] = useState(false);
+     
+      const { timerDuration } = props; // using destructuring to pull out specific props values
+     
+      useEffect(() => {
+        if (!timerIsActive) {
+          setTimerIsActive(true);
+          myTimer = setTimeout(() => {
+            setTimerIsActive(false);
+          }, timerDuration);
+        }
+      }, [timerIsActive, timerDuration]);
+    };
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+In this example:
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+    timerIsActive is added as a dependency because it's component state that may change when the component changes (e.g. because the state was updated)
 
-### `yarn eject`
+    timerDuration is added as a dependency because it's a prop value of that component - so it may change if a parent component changes that value (causing this MyComponent component to re-render as well)
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
+    setTimerIsActive is NOT added as a dependency because it's that exception: State updating functions could be added but don't have to be added since React guarantees that the functions themselves never change
 
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+    myTimer is NOT added as a dependency because it's not a component-internal variable (i.e. not some state or a prop value) - it's defined outside of the component and changing it (no matter where) wouldn't cause the component to be re-evaluated
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
-
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `yarn build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+    setTimeout is NOT added as a dependency because it's a built-in API (built-into the browser) - it's independent from React and your components, it doesn't change
